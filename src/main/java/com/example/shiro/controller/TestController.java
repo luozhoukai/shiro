@@ -51,10 +51,17 @@ public class TestController {
     }
 
     @RequiresRoles("admin")//角色是admin的用户能访问
-    @GetMapping(value = "modifyPermission")
-    public String modifyPermission(String username) {
-        systemService.modifyPermission(username);
-        return "modify permission success";
+    @GetMapping(value = "modifyUserPermission")
+    public String modifyUserPermission(String username) throws Exception {
+        systemService.modifyUserPermission(username);
+        return "modify user permission success";
+    }
+
+    @RequiresRoles("admin")//角色是admin的用户能访问
+    @GetMapping(value = "modifyApiPermission")
+    public String modifyApiPermission() throws Exception {
+        systemService.modifyApiPermission();
+        return "modify api permission success";
     }
 
     @RequiresPermissions("add")//有add权限的用户能访问

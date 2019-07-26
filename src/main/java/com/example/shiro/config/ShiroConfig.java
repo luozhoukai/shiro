@@ -1,5 +1,6 @@
 package com.example.shiro.config;
 
+import com.example.shiro.service.ShiroService;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.spring.LifecycleBeanPostProcessor;
 import org.apache.shiro.spring.web.config.DefaultShiroFilterChainDefinition;
@@ -19,24 +20,31 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.time.Duration;
+import java.util.Map;
 
 @Configuration
 public class ShiroConfig {
     /**
-     * 通过配置uri的方式进行权限管理
+     * 通过配置uri的方式进行权限管理，可以写死，也可以从数据库读取
      *
      * @return
      */
     @Bean
-    public ShiroFilterChainDefinition shiroFilterChainDefinition() {
-        DefaultShiroFilterChainDefinition chainDefinition = new DefaultShiroFilterChainDefinition();
-        chainDefinition.addPathDefinition("/**", "anon");
-//        chainDefinition.addPathDefinition("/login", "anon");//anon-都能访问
-//        chainDefinition.addPathDefinition("/getUserDetail", "authc");//authc-登入的用户能访问
-//        chainDefinition.addPathDefinition("/getUser", "user");//user-登入的用户和记住我的用户能访问
-//        chainDefinition.addPathDefinition("/addUser", "authc,roles[admin]");//角色是admin的用户能访问
-//        chainDefinition.addPathDefinition("/add", "authc,perms[add]");//有add权限的用户能访问
-        return chainDefinition;
+    public ShiroFilterChainDefinition shiroFilterChainDefinition(ShiroService shiroService) {
+        DefaultShiroFilterChainDefinition shiroFilterChainDefinition = new DefaultShiroFilterChainDefinition();
+        //从数据库读取权限
+        Map<String, String> chains = shiroService.loadFilterChainDefinitions();
+        for (Map.Entry<String, String> chain : chains.entrySet()) {
+            shiroFilterChainDefinition.addPathDefinition(chain.getKey(), chain.getValue());
+        }
+//        //写死权限
+//        shiroFilterChainDefinition.addPathDefinition("/**", "anon");//所有接口都任意访问
+//        shiroFilterChainDefinition.addPathDefinition("/login", "anon");//anon-都能访问
+//        shiroFilterChainDefinition.addPathDefinition("/getUserDetail", "authc");//authc-登入的用户能访问
+//        shiroFilterChainDefinition.addPathDefinition("/getUser", "user");//user-登入的用户和记住我的用户能访问
+//        shiroFilterChainDefinition.addPathDefinition("/addUser", "authc,roles[admin]");//角色是admin的用户能访问
+//        shiroFilterChainDefinition.addPathDefinition("/add", "authc,perms[add]");//有add权限的用户能访问
+        return shiroFilterChainDefinition;
     }
 
     /**
