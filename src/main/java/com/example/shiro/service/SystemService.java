@@ -44,7 +44,7 @@ public class SystemService {
      */
     public void modifyApiPermission() throws Exception{
         //修改接口权限时重新读取权限
-        //todo 部署多个实例时，调用该方法只能重新加载当前实例的权限，不能通同步到其他实例，待解决
+        //todo 部署多个实例时，调用该方法只能重新加载当前实例的权限，不能通同步到其他实例，需要通过其他方式解决
         AbstractShiroFilter shiroFilter = (AbstractShiroFilter) shiroFilterFactoryBean.getObject();
         PathMatchingFilterChainResolver filterChainResolver = (PathMatchingFilterChainResolver) shiroFilter.getFilterChainResolver();
         DefaultFilterChainManager filterChainManager = (DefaultFilterChainManager) filterChainResolver.getFilterChainManager();
