@@ -3,8 +3,7 @@ package com.example.shiro.config;
 import com.example.shiro.service.ShiroService;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.spring.LifecycleBeanPostProcessor;
-import org.apache.shiro.spring.web.config.DefaultShiroFilterChainDefinition;
-import org.apache.shiro.spring.web.config.ShiroFilterChainDefinition;
+import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.CookieRememberMeManager;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.apache.shiro.web.servlet.SimpleCookie;
@@ -24,27 +23,24 @@ import java.util.Map;
 
 @Configuration
 public class ShiroConfig {
+
     /**
      * 通过配置uri的方式进行权限管理，可以写死，也可以从数据库读取
      *
+     * @param defaultWebSecurityManager
+     * @param shiroService
      * @return
      */
     @Bean
-    public ShiroFilterChainDefinition shiroFilterChainDefinition(ShiroService shiroService) {
-        DefaultShiroFilterChainDefinition shiroFilterChainDefinition = new DefaultShiroFilterChainDefinition();
+    public ShiroFilterFactoryBean shiroFilterFactoryBean(DefaultWebSecurityManager defaultWebSecurityManager, ShiroService shiroService) {
+        ShiroFilterFactoryBean shiroFilterFactoryBean = new ShiroFilterFactoryBean();
+        shiroFilterFactoryBean.setSecurityManager(defaultWebSecurityManager);
         //从数据库读取权限
         Map<String, String> chains = shiroService.loadFilterChainDefinitions();
-        for (Map.Entry<String, String> chain : chains.entrySet()) {
-            shiroFilterChainDefinition.addPathDefinition(chain.getKey(), chain.getValue());
-        }
-//        //写死权限
-//        shiroFilterChainDefinition.addPathDefinition("/**", "anon");//所有接口都任意访问
-//        shiroFilterChainDefinition.addPathDefinition("/login", "anon");//anon-都能访问
-//        shiroFilterChainDefinition.addPathDefinition("/getUserDetail", "authc");//authc-登入的用户能访问
-//        shiroFilterChainDefinition.addPathDefinition("/getUser", "user");//user-登入的用户和记住我的用户能访问
-//        shiroFilterChainDefinition.addPathDefinition("/addUser", "authc,roles[admin]");//角色是admin的用户能访问
-//        shiroFilterChainDefinition.addPathDefinition("/add", "authc,perms[add]");//有add权限的用户能访问
-        return shiroFilterChainDefinition;
+        shiroFilterFactoryBean.setFilterChainDefinitionMap(chains);
+        shiroFilterFactoryBean.setLoginUrl("/notLogin");
+        shiroFilterFactoryBean.setUnauthorizedUrl("/notLogin");
+        return shiroFilterFactoryBean;
     }
 
     /**
@@ -92,10 +88,10 @@ public class ShiroConfig {
      * @return
      */
     @Bean
-    public ShiroRealm shiroRealm(RedisCacheManager redisCacheManager) {
+    public ShiroRealm shiroRealm(HashedCredentialsMatcher hashedCredentialsMatcher, ShiroRedisCacheManager shiroRedisCacheManager) {
         ShiroRealm realm = new ShiroRealm();
-        realm.setCredentialsMatcher(hashedCredentialsMatcher());
-        realm.setCacheManager(shiroRedisCacheManager(redisCacheManager));
+        realm.setCredentialsMatcher(hashedCredentialsMatcher);
+        realm.setCacheManager(shiroRedisCacheManager);
         realm.setAuthenticationCachingEnabled(true);
         realm.setAuthorizationCachingEnabled(true);
         return realm;
@@ -141,15 +137,18 @@ public class ShiroConfig {
     /**
      * Shiro核心配置
      *
-     * @param redisTemplate
+     * @param shiroRealm
+     * @param cookieRememberMeManager
+     * @param defaultWebSessionManager
      * @return
      */
     @Bean
-    public DefaultWebSecurityManager securityManager(RedisTemplate redisTemplate, RedisCacheManager redisCacheManager) {
+    public DefaultWebSecurityManager securityManager(ShiroRealm shiroRealm, CookieRememberMeManager cookieRememberMeManager,
+                                                     DefaultWebSessionManager defaultWebSessionManager) {
         DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
-        securityManager.setRealm(shiroRealm(redisCacheManager));
-        securityManager.setRememberMeManager(rememberMeManager());
-        securityManager.setSessionManager(sessionManager(redisTemplate));
+        securityManager.setRealm(shiroRealm);
+        securityManager.setRememberMeManager(cookieRememberMeManager);
+        securityManager.setSessionManager(defaultWebSessionManager);
         return securityManager;
     }
 
